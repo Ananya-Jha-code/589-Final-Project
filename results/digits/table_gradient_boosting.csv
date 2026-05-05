@@ -1,0 +1,13 @@
+algorithm,hyperparameter,n_estimators,learning_rate,mean_accuracy,mean_f1_weighted
+Gradient Boosting,"n_estimators=10, learning_rate=0.01",10,0.01,0.8441992551210428,0.8428136662018494
+Gradient Boosting,"n_estimators=10, learning_rate=0.1",10,0.1,0.8987088764742396,0.8987028899190376
+Gradient Boosting,"n_estimators=10, learning_rate=0.5",10,0.5,0.9426877715704531,0.9424669954207412
+Gradient Boosting,"n_estimators=25, learning_rate=0.01",25,0.01,0.8592116697703289,0.8586418581350272
+Gradient Boosting,"n_estimators=25, learning_rate=0.1",25,0.1,0.9415580384854128,0.9415810371073079
+Gradient Boosting,"n_estimators=25, learning_rate=0.5",25,0.5,0.9638299193047797,0.9637200060557239
+Gradient Boosting,"n_estimators=50, learning_rate=0.01",50,0.01,0.8759062693978896,0.8757022631744892
+Gradient Boosting,"n_estimators=50, learning_rate=0.1",50,0.1,0.9554810676598386,0.955290271491708
+Gradient Boosting,"n_estimators=50, learning_rate=0.5",50,0.5,0.9699410304158909,0.9697744575725823
+Gradient Boosting,"n_estimators=100, learning_rate=0.01",100,0.01,0.8998168839230292,0.8999578134269195
+Gradient Boosting,"n_estimators=100, learning_rate=0.1",100,0.1,0.9654996896337679,0.9655425625627757
+Gradient Boosting,"n_estimators=100, learning_rate=0.5",100,0.5,0.97495965238982,0.9748361291394018

@@ -1,0 +1,2 @@
+algorithm,hyperparameter,mean_accuracy,mean_f1_weighted
+Ensemble (majority vote),"knn_k=5, rf_ntree=125, +GaussianNB",0.9615859714463065,0.9615535500708342

@@ -1,0 +1,4 @@
+name,algorithm,hyperparameter,mean_accuracy,mean_f1_weighted,n_estimators,learning_rate
+best_knn,k-NN,k=5,0.9788454376163873,0.9787265286382676,,
+best_random_forest,Random Forest,ntree=125,0.888699565487275,0.8850114114354461,,
+best_gradient_boosting,Gradient Boosting,"n_estimators=100, learning_rate=0.5",0.97495965238982,0.9748361291394018,100.0,0.5
