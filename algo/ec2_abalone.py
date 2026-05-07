@@ -9,16 +9,14 @@ from knn import KNN
 
 def load_abalone():
     data = fetch_openml('abalone', version=1, as_frame=True, parser='auto')
-    df = data.frame.copy()
-
-    rings = df['Rings'].astype(int).values
-    df = df.drop(columns=['Rings'])
+    df = data.data.copy()
+    rings = data.target.astype(int).values
 
     sex_dummies = pd.get_dummies(df['Sex'], prefix='Sex')
     num_cols = [c for c in df.columns if c != 'Sex']
     X = pd.concat([sex_dummies, df[num_cols].astype(float)], axis=1).values.astype(float)
 
-    y = np.digitize(rings, bins=[9, 11, 14])
+    y = np.digitize(rings, bins=[9, 14])
     return X, y
 
 
@@ -78,7 +76,8 @@ def run_cv(model_fn, X, y, k=10, use_norm=False):
 if __name__ == '__main__':
     X, y = load_abalone()
     print(f"abalone: {len(X)} samples, {X.shape[1]} features, classes={np.unique(y)}")
-    print(f"class counts: {dict(zip(*np.unique(y, return_counts=True)))}")
+    vals, counts = np.unique(y, return_counts=True)
+    print(f"class counts: { {int(v): int(c) for v, c in zip(vals, counts)} }")
 
     print("\n\nkNN:")
     k_values = [1, 3, 5, 7, 11, 15]
@@ -86,7 +85,7 @@ if __name__ == '__main__':
     
     for k in k_values:
         acc, acc_std, f1, f1_std = run_cv(lambda k=k: KNN(k=k), X, y, use_norm=True)
-        print(f"  k={k:2d}  acc={acc:.4f} +-{acc_std:.4f}  f1={f1:.4f} +-{f1_std:.4f}")
+        print(f"  k={k:2d}  acc={acc:.4f}  f1={f1:.4f}")
         knn_results.append((k, acc, acc_std, f1, f1_std))
 
     print("\n\nGaussian Naive Bayes:")
@@ -95,7 +94,7 @@ if __name__ == '__main__':
 
     for sv in smoothing_vals:
         acc, acc_std, f1, f1_std = run_cv(lambda sv=sv: GaussianNaiveBayes(var_smoothing=sv), X, y)
-        print(f"  var_smoothing={sv:.0e}  acc={acc:.4f} +-{acc_std:.4f}  f1={f1:.4f}")
+        print(f"  var_smoothing={sv:.0e}  acc={acc:.4f}  f1={f1:.4f}")
         gnb_results.append((sv, acc, acc_std, f1, f1_std))
 
     plt.figure()
