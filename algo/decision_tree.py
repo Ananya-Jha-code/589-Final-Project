@@ -22,10 +22,21 @@ class TreeNode:
 
 
 class DecisionTree:
-    def __init__(self, criterion='information_gain', early_stop_threshold=None):
+    def __init__(
+        self,
+        criterion="information_gain",
+        early_stop_threshold=None,
+        min_size_for_split=None,
+        max_depth=None,
+        n_features=None,
+    ):
         self.root = None
         self.criterion = criterion
         self.early_stop_threshold = early_stop_threshold
+        # RandomForest / regularization: optional (None = legacy behavior: no extra stopping)
+        self.min_size_for_split = min_size_for_split
+        self.max_depth = max_depth
+        self.n_features = n_features
         self.attribute_names = None
 
     def entropy(self, y):
@@ -79,9 +90,9 @@ class DecisionTree:
         return most_common[0][0]
 
     # Recursively builds decision tree by finding the best attribute to split on and splitting the data.
-    def build_tree(self, X, y, attributes):
+    def build_tree(self, X, y, attributes, depth=0):
         unique_labels = np.unique(y)
-        
+
         if len(unique_labels) == 1:
             if isinstance(y, pd.Series):
                 label = y.iloc[0]
@@ -91,27 +102,39 @@ class DecisionTree:
 
         if len(attributes) == 0:
             return TreeNode(label=self.majority_class(y))
+
+        if self.max_depth is not None and depth >= self.max_depth:
+            return TreeNode(label=self.majority_class(y))
+
+        if self.min_size_for_split is not None and len(y) < self.min_size_for_split:
+            return TreeNode(label=self.majority_class(y))
+
         # stop if most samples are the same class
         if self.early_stop_threshold is not None:
             counts = Counter(y)
             max_count = max(counts.values())
             fraction = max_count / len(y)
-            
+
             if fraction >= self.early_stop_threshold:
                 return TreeNode(label=self.majority_class(y))
 
         if len(y) == 0:
             return TreeNode(label=None)
 
-        # find best attribute to split on
+        attr_list = list(attributes)
+        if self.n_features is not None and len(attr_list) > self.n_features:
+            candidates = list(np.random.choice(attr_list, size=self.n_features, replace=False))
+        else:
+            candidates = attr_list
+
         gains = []
-        for attr in attributes:
+        for attr in candidates:
             gains.append(self.information_gain(X, y, attr))
-        
-        best_attr = attributes[np.argmax(gains)]
+
+        best_attr = candidates[np.argmax(gains)]
 
         node = TreeNode(attribute=best_attr, majority=self.majority_class(y))
-        
+
         remaining_attrs = [a for a in attributes if a != best_attr]
 
         values = X[best_attr].unique()
@@ -124,7 +147,7 @@ class DecisionTree:
             if len(subset_y) == 0:
                 node.branches[value] = TreeNode(label=self.majority_class(y))
             else:
-                child_node = self.build_tree(subset_X, subset_y, remaining_attrs)
+                child_node = self.build_tree(subset_X, subset_y, remaining_attrs, depth + 1)
                 node.branches[value] = child_node
 
         return node
