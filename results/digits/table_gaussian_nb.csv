@@ -1,0 +1,2 @@
+algorithm,hyperparameter,mean_accuracy,mean_f1_weighted
+Gaussian NB,GaussianNB() defaults,0.8425108628181253,0.8438921700490966

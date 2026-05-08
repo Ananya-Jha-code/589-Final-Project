@@ -1,0 +1,19 @@
+{
+  "dataset_csv": "data/digits.csv",
+  "n_samples": 1797,
+  "n_features": 64,
+  "cv_splits": 10,
+  "random_state": 42,
+  "random_forest_max_depth_cap": 12,
+  "best_k_knn": 5,
+  "best_ntree_random_forest": 125,
+  "gaussian_nb_mean_accuracy": 0.8425108628181253,
+  "gaussian_nb_mean_f1_weighted": 0.8438921700490966,
+  "ensemble_majority_vote": {
+    "mean_accuracy": 0.9615859714463065,
+    "mean_f1_weighted": 0.9615535500708342,
+    "uses_k": 5,
+    "uses_ntree": 125
+  },
+  "saved_at_utc": "2026-05-05T05:17:44.957248+00:00"
+}
