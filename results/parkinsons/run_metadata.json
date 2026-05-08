@@ -1,0 +1,19 @@
+{
+  "dataset_csv": "data/parkinsons.csv",
+  "n_samples": 195,
+  "n_features": 22,
+  "cv_splits": 10,
+  "random_state": 42,
+  "random_forest_max_depth_cap": 12,
+  "best_k_knn": 1,
+  "best_ntree_random_forest": 10,
+  "gaussian_nb_mean_accuracy": 0.7131578947368421,
+  "gaussian_nb_mean_f1_weighted": 0.728347975759303,
+  "ensemble_majority_vote": {
+    "mean_accuracy": 0.9378947368421053,
+    "mean_f1_weighted": 0.9366953631212898,
+    "uses_k": 1,
+    "uses_ntree": 10
+  },
+  "saved_at_utc": "2026-05-05T11:49:10.132973+00:00"
+}
