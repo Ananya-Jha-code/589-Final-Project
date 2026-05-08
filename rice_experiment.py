@@ -4,6 +4,7 @@ Rice Grains Dataset – Experiments
 Algorithms evaluated
   1. k-Nearest Neighbours  (KNN)
   2. Neural Network         (NN)
+  3. Gaussian Naive Bayes   (GNB)  [EC1]
 
 Both algorithms suit all-numerical data well.
 
@@ -17,6 +18,10 @@ a small NN reliably without excessive overfitting.
 
 Evaluation: stratified 10-fold cross-validation, accuracy + F1-score.
 At least 6 hyperparameter configurations per algorithm.
+
+Extra credit:
+  EC1) Evaluate more than two algorithms using the full rice dataset.
+  EC3) Build an ensemble with bootstrap training and majority voting.
 """
 
 import sys
@@ -28,6 +33,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from collections import Counter
 
 from knn import KNN
 from neural_network import NeuralNetwork
@@ -75,6 +81,20 @@ def f1_binary(y_true, y_pred, pos=1):
     return 2.0 * p * r / (p + r) if (p + r) > 0 else 0.0
 
 
+def bootstrap_sample(X, y, seed):
+    rng = np.random.RandomState(seed)
+    idx = rng.randint(0, len(y), size=len(y))
+    return X[idx], y[idx]
+
+
+def majority_vote(pred_matrix):
+    # pred_matrix shape: (n_models, n_samples)
+    out = []
+    for j in range(pred_matrix.shape[1]):
+        out.append(Counter(pred_matrix[:, j].tolist()).most_common(1)[0][0])
+    return np.array(out, dtype=int)
+
+
 # ── data loading ──────────────────────────────────────────────────────────────
 
 def load_rice(data_dir='data'):
@@ -105,7 +125,7 @@ def knn_cv(X, y, k_val, folds):
 
 
 def run_knn(X, y, folds):
-    print('\n── KNN on Rice ─────────────────────────────────────────────')
+    print('\n== KNN on Rice =============================================')
     print(f'  {"k":>4}  {"Accuracy":>10}  {"F1-Score":>10}')
     print('  ' + '-' * 30)
     results = []
@@ -148,14 +168,25 @@ def plot_knn(results, out_dir):
 
 NN_CONFIGS = [
     # (layer_sizes,         lr,    lam,    n_iters, label)
-    ([7, 16,      1],     0.10,  0.000,  1000,  'arch=[7,16,1]    lr=0.10 λ=0.000'),
-    ([7, 32,      1],     0.10,  0.000,  1000,  'arch=[7,32,1]    lr=0.10 λ=0.000'),
-    ([7, 64,      1],     0.05,  0.000,  1000,  'arch=[7,64,1]    lr=0.05 λ=0.000'),
-    ([7, 16,  8,  1],     0.10,  0.000,  1000,  'arch=[7,16,8,1]  lr=0.10 λ=0.000'),
-    ([7, 32, 16,  1],     0.10,  0.000,  1000,  'arch=[7,32,16,1] lr=0.10 λ=0.000'),
-    ([7, 32,      1],     0.10,  0.010,  1000,  'arch=[7,32,1]    lr=0.10 λ=0.010'),
-    ([7, 32,      1],     0.10,  0.001,  2000,  'arch=[7,32,1]    lr=0.10 λ=0.001 2k'),
-    ([7, 16,      1],     0.10,  0.001,  2000,  'arch=[7,16,1]    lr=0.10 λ=0.001 2k'),
+    ([7, 16,      1],     0.10,  0.000,  1000,  'arch=[7,16,1]    lr=0.10 lam=0.000'),
+    ([7, 32,      1],     0.10,  0.000,  1000,  'arch=[7,32,1]    lr=0.10 lam=0.000'),
+    ([7, 64,      1],     0.05,  0.000,  1000,  'arch=[7,64,1]    lr=0.05 lam=0.000'),
+    ([7, 16,  8,  1],     0.10,  0.000,  1000,  'arch=[7,16,8,1]  lr=0.10 lam=0.000'),
+    ([7, 32, 16,  1],     0.10,  0.000,  1000,  'arch=[7,32,16,1] lr=0.10 lam=0.000'),
+    ([7, 32,      1],     0.10,  0.010,  1000,  'arch=[7,32,1]    lr=0.10 lam=0.010'),
+    ([7, 32,      1],     0.10,  0.001,  2000,  'arch=[7,32,1]    lr=0.10 lam=0.001 2k'),
+    ([7, 16,      1],     0.10,  0.001,  2000,  'arch=[7,16,1]    lr=0.10 lam=0.001 2k'),
+]
+
+# ── Gaussian Naive Bayes experiments (EC1) ────────────────────────────────────
+GNB_SMOOTHINGS = [1e-12, 1e-10, 1e-8, 1e-6, 1e-4, 1e-3, 1e-2, 1e-1]
+
+# ── Ensemble configuration (EC3) ──────────────────────────────────────────────
+ENSEMBLE_NN_CONFIGS = [
+    # (layer_sizes, lr, lam, n_iters)
+    ([7, 16, 1],      0.10, 0.001, 1200),
+    ([7, 32, 1],      0.10, 0.001, 1200),
+    ([7, 32, 16, 1],  0.08, 0.001, 1200),
 ]
 
 
@@ -174,7 +205,7 @@ def nn_cv(X, y, arch, lr, lam, n_iters, folds):
 
 
 def run_nn(X, y, folds):
-    print('\n── Neural Network on Rice ──────────────────────────────────')
+    print('\n== Neural Network on Rice ==================================')
     print(f'  {"Config":<42}  {"Accuracy":>10}  {"F1-Score":>10}')
     print('  ' + '-' * 68)
     results = []
@@ -183,6 +214,78 @@ def run_nn(X, y, folds):
         print(f'  {label:<42}  {acc:>10.4f}  {f1:>10.4f}')
         results.append((arch, lr, lam, n_iters, label, acc, f1))
     return results
+
+
+def gnb_fit_predict(X_tr, y_tr, X_te, smoothing):
+    classes = np.unique(y_tr)
+    means, vars_, priors = {}, {}, {}
+    for c in classes:
+        Xc = X_tr[y_tr == c]
+        means[c] = Xc.mean(axis=0)
+        vars_[c] = Xc.var(axis=0) + smoothing
+        priors[c] = len(Xc) / len(y_tr)
+
+    log_post = []
+    for c in classes:
+        mean = means[c]
+        var = vars_[c]
+        log_prior = np.log(priors[c])
+        log_likelihood = -0.5 * np.sum(np.log(2.0 * np.pi * var), axis=0)
+        log_likelihood -= 0.5 * np.sum(((X_te - mean) ** 2) / var, axis=1)
+        log_post.append(log_prior + log_likelihood)
+    log_post = np.vstack(log_post).T
+    return classes[np.argmax(log_post, axis=1)]
+
+
+def gnb_cv(X, y, smoothing, folds):
+    accs, f1s = [], []
+    for train_idx, test_idx in folds:
+        X_tr, X_te = normalize(X[train_idx], X[test_idx])
+        y_tr, y_te = y[train_idx], y[test_idx]
+        y_pred = gnb_fit_predict(X_tr, y_tr, X_te, smoothing=smoothing)
+        accs.append(accuracy(y_te, y_pred))
+        f1s.append(f1_binary(y_te, y_pred))
+    return np.mean(accs), np.mean(f1s)
+
+
+def run_gnb(X, y, folds):
+    print('\n== Gaussian Naive Bayes on Rice (EC1) =======================')
+    print(f'  {"Smoothing":<12}  {"Accuracy":>10}  {"F1-Score":>10}')
+    print('  ' + '-' * 52)
+    results = []
+    for smoothing in GNB_SMOOTHINGS:
+        acc, f1 = gnb_cv(X, y, smoothing=smoothing, folds=folds)
+        print(f'  {smoothing:<12.1e}  {acc:>10.4f}  {f1:>10.4f}')
+        results.append((smoothing, acc, f1))
+    return results
+
+
+def ensemble_cv(X, y, folds):
+    accs, f1s = [], []
+
+    for fold_i, (train_idx, test_idx) in enumerate(folds):
+        X_tr, X_te = normalize(X[train_idx], X[test_idx])
+        y_tr, y_te = y[train_idx], y[test_idx]
+
+        preds = []
+
+        for nn_i, (arch, lr, lam, n_iters) in enumerate(ENSEMBLE_NN_CONFIGS):
+            X_bs, y_bs = bootstrap_sample(X_tr, y_tr, seed=1000 + 10 * fold_i + nn_i)
+            np.random.seed(2000 + 10 * fold_i + nn_i)
+            nn = NeuralNetwork(arch, lam=lam)
+            nn.train(X_bs, y_bs, lr=lr, n_iters=n_iters)
+            preds.append(nn.predict(X_te))
+
+        X_bs_knn, y_bs_knn = bootstrap_sample(X_tr, y_tr, seed=3000 + fold_i)
+        knn = KNN(k=15)
+        knn.fit(X_bs_knn, y_bs_knn)
+        preds.append(knn.predict(X_te))
+
+        y_pred = majority_vote(np.array(preds))
+        accs.append(accuracy(y_te, y_pred))
+        f1s.append(f1_binary(y_te, y_pred))
+
+    return np.mean(accs), np.mean(f1s)
 
 
 def plot_nn_learning_curve(X, y, best_arch, best_lr, best_lam, best_n_iters,
@@ -207,7 +310,7 @@ def plot_nn_learning_curve(X, y, best_arch, best_lr, best_lam, best_n_iters,
     sizes = sorted(set(sizes))
 
     Js = []
-    print(f'\n  Computing NN learning curve ({len(sizes)} points) …')
+    print(f'\n  Computing NN learning curve ({len(sizes)} points) ...')
     for sz in sizes:
         # Stratified subsample of sz examples from the training fold
         classes   = np.unique(y_tr_full)
@@ -237,13 +340,37 @@ def plot_nn_learning_curve(X, y, best_arch, best_lr, best_lam, best_n_iters,
     ax.set_ylabel('Cost J  (test set)', fontsize=12)
     arch_str = str(best_arch)
     ax.set_title(
-        f'Neural Network Learning Curve – Rice Dataset\n'
-        f'arch={arch_str}, lr={best_lr}, λ={best_lam}',
+        f'Neural Network Learning Curve - Rice Dataset\n'
+        f'arch={arch_str}, lr={best_lr}, lam={best_lam}',
         fontsize=13,
     )
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     path = os.path.join(out_dir, 'rice_nn_learning_curve.png')
+    plt.savefig(path, dpi=150)
+    plt.close()
+    print(f'  Saved: {path}')
+
+
+def plot_model_comparison(summary_rows, out_dir):
+    labels = [r['Model'] for r in summary_rows]
+    accs = [r['Accuracy'] for r in summary_rows]
+    f1s = [r['F1-Score'] for r in summary_rows]
+    x = np.arange(len(labels))
+    w = 0.35
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.bar(x - w / 2, accs, w, label='Accuracy')
+    ax.bar(x + w / 2, f1s, w, label='F1-Score')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylim(0.85, 1.00)
+    ax.set_ylabel('Score')
+    ax.set_title('Rice Dataset: Best Models and Ensemble (10-fold stratified CV)')
+    ax.grid(True, axis='y', alpha=0.3)
+    ax.legend()
+    plt.tight_layout()
+    path = os.path.join(out_dir, 'rice_model_comparison.png')
     plt.savefig(path, dpi=150)
     plt.close()
     print(f'  Saved: {path}')
@@ -276,6 +403,17 @@ def main():
     print(f'\n  Best NN: {best_nn[4]}\n'
           f'           Accuracy={best_nn[5]:.4f}  F1={best_nn[6]:.4f}')
 
+    # ── Gaussian Naive Bayes (EC1) ───────────────────────────────────────────
+    gnb_results = run_gnb(X, y, folds)
+    best_gnb = max(gnb_results, key=lambda r: r[1])
+    print(f'\n  Best GNB: smoothing={best_gnb[0]:.1e}\n'
+          f'            Accuracy={best_gnb[1]:.4f}  F1={best_gnb[2]:.4f}')
+
+    # ── Ensemble (EC3) ───────────────────────────────────────────────────────
+    ens_acc, ens_f1 = ensemble_cv(X, y, folds)
+    print(f'\n== Ensemble (3 NNs + 1 KNN, bootstrap + majority vote) ======')
+    print(f'  Accuracy={ens_acc:.4f}  F1={ens_f1:.4f}')
+
     plot_nn_learning_curve(
         X, y,
         best_arch=best_nn[0], best_lr=best_nn[1],
@@ -284,11 +422,29 @@ def main():
     )
 
     # ── Summary ───────────────────────────────────────────────────────────────
-    print('\n══ Final Summary – Rice Dataset ══════════════════════════════')
+    summary_rows = [
+        {'Model': f'KNN (k={best_knn[0]})', 'Accuracy': best_knn[1], 'F1-Score': best_knn[2]},
+        {'Model': 'NN (best config)', 'Accuracy': best_nn[5], 'F1-Score': best_nn[6]},
+        {'Model': 'GNB (best smoothing)', 'Accuracy': best_gnb[1], 'F1-Score': best_gnb[2]},
+        {'Model': 'Ensemble (EC3)', 'Accuracy': ens_acc, 'F1-Score': ens_f1},
+    ]
+    summary_df = pd.DataFrame(summary_rows)
+    summary_path = os.path.join(out_dir, 'rice_evaluation_summary.csv')
+    summary_df.to_csv(summary_path, index=False)
+    print(f'  Saved: {summary_path}')
+    plot_model_comparison(summary_rows, out_dir)
+
+    print('\n== Final Summary - Rice Dataset ==============================')
     print(f'  KNN  (k={best_knn[0]:>2}):  '
           f'Accuracy = {best_knn[1]:.4f}   F1 = {best_knn[2]:.4f}')
     print(f'  NN   ({best_nn[4]}):')
     print(f'          Accuracy = {best_nn[5]:.4f}   F1 = {best_nn[6]:.4f}')
+    print(f'  GNB  (smoothing={best_gnb[0]:.1e}):')
+    print(f'          Accuracy = {best_gnb[1]:.4f}   F1 = {best_gnb[2]:.4f}')
+    print('  Ensemble (3 NNs + 1 KNN, majority vote):')
+    print(f'          Accuracy = {ens_acc:.4f}   F1 = {ens_f1:.4f}')
+    print('\n  Evaluation table:')
+    print(summary_df.to_string(index=False))
 
 
 if __name__ == '__main__':
