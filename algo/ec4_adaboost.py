@@ -97,27 +97,33 @@ def run_cv(n_estimators, X, y, k=10):
 
 
 def plot_learning_curve(X, y, dataset_name):
-    rng = np.random.RandomState(42)
-    idx = rng.permutation(len(y))
-    split = int(0.9 * len(y))
-    X_tr, X_te = X[idx[:split]], X[idx[split:]]
-    y_tr, y_te = y[idx[:split]], y[idx[split:]]
+    if dataset_name == 'Digits':
+        steps = [10, 25, 50, 75, 100, 150]
+    else:
+        steps = list(range(10, 151, 10))
 
-    steps = list(range(10, 151, 10))
-    train_accs, test_accs = [], []
-    
-    for n in steps:
-        m = AdaBoost(n_estimators=n)
-        m.fit(X_tr, y_tr)
-        train_accs.append(np.mean(m.predict(X_tr) == y_tr))
-        test_accs.append(np.mean(m.predict(X_te) == y_te))
+    splits = stratified_kfold(X, y, k=10, seed=42)
+    fold_train = np.zeros((len(splits), len(steps)))
+    fold_test  = np.zeros((len(splits), len(steps)))
+
+    for fi, (train_idx, test_idx) in enumerate(splits):
+        X_tr, X_te = X[train_idx], X[test_idx]
+        y_tr, y_te = y[train_idx], y[test_idx]
+        for si, n in enumerate(steps):
+            m = AdaBoost(n_estimators=n)
+            m.fit(X_tr, y_tr)
+            fold_train[fi, si] = np.mean(m.predict(X_tr) == y_tr)
+            fold_test[fi, si]  = np.mean(m.predict(X_te) == y_te)
+
+    train_accs = fold_train.mean(axis=0)
+    test_accs  = fold_test.mean(axis=0)
 
     plt.figure()
-    plt.plot(steps, train_accs, label='train')
-    plt.plot(steps, test_accs, label='test')
+    plt.plot(steps, train_accs, marker='o', label='train')
+    plt.plot(steps, test_accs,  marker='s', label='test')
     plt.xlabel('n_estimators')
     plt.ylabel('accuracy')
-    plt.title(f'AdaBoost learning curve - {dataset_name}')
+    plt.title(f'AdaBoost (SAMME) learning curve - {dataset_name}')
     plt.legend()
     plt.savefig(f'ec4_adaboost_{dataset_name.lower()}.png', dpi=300)
     plt.close()
